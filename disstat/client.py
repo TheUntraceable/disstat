@@ -71,6 +71,22 @@ class DisstatClient:
         start: Optional[int] = None,
         end: Optional[int] = None,
     ):
+        """
+        Get the stats for a bot.
+
+        Args:
+            bot_id (Optional[int], optional): The ID of the bot to get stats for. Defaults to None.
+            get_stats (bool, optional): Whether to get stats for the bot. Defaults to False.
+            data_points (Optional[int], optional): The number of data points to get. Defaults to None.
+            start (Optional[int], optional): The start time to get data points from. Defaults to None.
+            end (Optional[int], optional): The end time to get data points from. Defaults to None.
+
+        Returns:
+            The response from the Disstat API.
+
+        Raises:
+            ValueError: No bot ID was provided, and Discord Client has not logged in yet.
+        """
         if not self.session:
             self.session = aiohttp.ClientSession(
                 headers={
@@ -111,6 +127,26 @@ class DisstatClient:
         bandwidth: Optional[int] = None,
         custom_data: Optional[List[CustomGraphData]] = None,
     ):
+        """
+        Post stats to the Disstat API.
+
+        Args:
+            guilds (Optional[int], optional): The number of guilds the bot is in. Defaults to None.
+            users (Optional[int], optional): The number of users the bot can see. Defaults to None.
+            shards (Optional[int], optional): The number of shards the bot has. Defaults to None.
+            api_ping (Optional[int], optional): The latency of the bot to the Discord API. Defaults to None.
+            ram_usage (Optional[int], optional): The RAM usage of the bot. Defaults to None.
+            total_ram (Optional[int], optional): The total RAM usage of the bot. Defaults to None.
+            cpu_usage (Optional[int], optional): The CPU usage of the bot. Defaults to None.
+            bandwidth (Optional[int], optional): The bandwidth usage of the bot. Defaults to None.
+            custom_data (Optional[List[CustomGraphData]], optional): The custom graph data to post. Defaults to None.
+
+        Returns:
+            The response from the Disstat API.
+
+        Raises:
+            ValueError: The Discord client has not logged in yet.
+        """
         if not self.client.user:
             raise ValueError(
                 "Discord Client has not logged in yet, post_stats after READY."
@@ -144,6 +180,7 @@ class DisstatClient:
         return response
 
     async def _auto_post(self):
+        """The auto-post loop."""
         while True:
             payload = {
                 "guilds": len(self.client.guilds),
@@ -208,6 +245,21 @@ class DisstatClient:
     async def post_command(
         self, command_name: str, *, invoker_id: int, guild_id: Optional[int] = None
     ):
+        """
+        Post a command invocation to the Disstat API.
+
+        Args:
+            command_name (str): The name of the command.
+            invoker_id (int): The ID of the user who invoked the command.
+            guild_id (Optional[int], optional): The ID of the guild the command was invoked in. Defaults to None.
+
+        Returns:
+            The response from the Disstat API.
+
+        Raises:
+            ValueError: The Discord client has not logged in yet.
+
+        """
         if not self.client.user:
             raise ValueError(
                 "Discord Client has not logged in yet, post_stats after READY."
@@ -236,4 +288,5 @@ class DisstatClient:
         self.client.dispatch("disstat_post_command", data)
 
     async def start_auto_post(self):
+        """Start the auto-post loop."""
         self.client.loop.create_task(self._auto_post())

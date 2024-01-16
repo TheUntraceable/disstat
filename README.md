@@ -13,22 +13,36 @@ pip install disstat
 ## Usage
 
 ```python
-from disstat import DisstatClient
+from discord import Intents, Interaction
 from discord.ext import commands
+from disstat import DisstatClient
+
 
 class Bot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix="!", intents=discord.Intents.all())
+        super().__init__(command_prefix="!", intents=Intents.default())
         self.disstat = DisstatClient(self, "DISSTAT API KEY HERE")
 
     async def on_ready(self):
         await self.disstat.start_auto_post()
 
-    async def on_command_completion(self, ctx):  # For using prefix commands
-        await self.disstat.post_command(ctx.command.name, ctx.user.id, (ctx.guild.id if ctx.guild else None))
+    async def on_command_completion(
+        self, ctx: commands.Context
+    ):  # For using prefix commands
+        await self.disstat.post_command(
+            ctx.command.name,
+            invoker_id=ctx.user.id,
+            guild_id=(ctx.guild.id if ctx.guild else None),
+        )
 
-    async def on_app_command_completion(self, interaction):  # For using slash commands
-        await self.disstat.post_command(interaction.command.name, interaction.user.id, (interaction.guild.id if interaction.guild else None))
+    async def on_app_command_completion(
+        self, interaction: Interaction
+    ):  # For using slash commands
+        await self.disstat.post_command(
+            interaction.command.name,
+            invoker_id=interaction.user.id,
+            guild_id=(interaction.guild.id if interaction.guild else None),
+        )
 
     async def on_disstat_post(self, payload):
         print("Posted stats to Disstat.")
@@ -36,8 +50,8 @@ class Bot(commands.Bot):
     async def on_disstat_post_command(self, payload):
         print(f"Posted command {payload['command']} to Disstat.")
 
+
 bot = Bot()
 
 bot.run("TOKEN")
-
 ```
