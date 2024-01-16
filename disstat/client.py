@@ -176,7 +176,6 @@ class DisstatClient:
             f"{BASE_URL}/bot/{self.client.user.id}",
             json=filtered_data,
         )
-        response.raise_for_status()
         return response
 
     async def _auto_post(self):
