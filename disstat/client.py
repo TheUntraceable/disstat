@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 from typing import TYPE_CHECKING, Any, Callable, Coroutine, List, Optional
+import warnings
 
 import aiohttp
 from psutil import AccessDenied, Process, cpu_percent
@@ -17,6 +18,24 @@ BASE_URL = "https://disstat-api.tomatenkuchen.com/v1"
 
 
 class DisstatClient:
+    """
+    A client for interacting with the Disstat API.
+
+    Attributes:
+        client (DiscordClient): The Discord client object.
+        api_key (str): The API key for accessing the Disstat API.
+        auto_post (bool): Whether to automatically post data to the Disstat API.
+        session (Optional[aiohttp.ClientSession]): The aiohttp client session to use for API requests.
+        get_custom_graph_data (Optional[Callable[..., Coroutine[Any, None, List[CustomGraphData]]]]): A callable function to retrieve custom graph data.
+
+    Methods:
+        get_bot: Get the stats for a bot.
+        post_stats: Post stats to the Disstat API.
+        post_custom_graph_data: Post custom graph data to the Disstat API.
+        post_command: Post a command invocation to the Disstat API.
+        start_auto_post: Start the auto-post loop.
+    """
+
     def __init__(
         self,
         client: DiscordClient,
@@ -27,6 +46,16 @@ class DisstatClient:
             Callable[..., Coroutine[Any, None, List[CustomGraphData]]]
         ] = None,
     ):
+        """
+        Initialize a new instance of the Client class.
+
+        Args:
+            client (DiscordClient): The Discord client object.
+            api_key (str): The API key for accessing the Disstat API.
+            auto_post (bool, optional): Whether to automatically post data to the Disstat API. Defaults to True.
+            session (Optional[aiohttp.ClientSession], optional): The aiohttp client session to use for API requests. Defaults to None.
+            get_custom_graph_data (Optional[Callable[..., Coroutine[Any, None, List[CustomGraphData]]]], optional): A callable function to retrieve custom graph data. Defaults to None.
+        """
         self.client = client
         self.api_key = api_key
         self.auto_post = auto_post
@@ -35,6 +64,7 @@ class DisstatClient:
 
     async def get_bot(
         self,
+        *,
         bot_id: Optional[int] = None,
         get_stats: bool = False,
         data_points: Optional[int] = None,
@@ -70,7 +100,8 @@ class DisstatClient:
 
     async def post_stats(
         self,
-        guilds: int,
+        *,
+        guilds: Optional[int] = None,
         users: Optional[int] = None,
         shards: Optional[int] = None,
         api_ping: Optional[int] = None,
@@ -102,6 +133,9 @@ class DisstatClient:
             "customData": custom_data,
         }
         filtered_data = {k: v for k, v in data.items() if v is not None}
+        if not filtered_data:
+            warnings.warn("No data was provided to post_stats.")
+            return
         response = await self.session.post(
             f"{BASE_URL}/bot/{self.client.user.id}",
             json=filtered_data,
@@ -143,6 +177,18 @@ class DisstatClient:
             await asyncio.sleep(90)
 
     async def post_custom_graph_data(self, custom_data: CustomGraphData):
+        """
+        Post custom graph data to the Disstat API.
+
+        Args:
+            custom_data (CustomGraphData): The custom graph data to post.
+
+        Returns:
+            The response from the Disstat API.
+
+        Raises:
+            ValueError: The Discord client has not logged in yet.
+        """
         if not self.client.user:
             raise ValueError(
                 "Discord Client has not logged in yet, post_stats after READY."
@@ -160,7 +206,7 @@ class DisstatClient:
         return await response.json()
 
     async def post_command(
-        self, command_name: str, invoker_id: int, guild_id: Optional[int] = None
+        self, command_name: str, *, invoker_id: int, guild_id: Optional[int] = None
     ):
         if not self.client.user:
             raise ValueError(
