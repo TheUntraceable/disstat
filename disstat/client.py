@@ -153,13 +153,11 @@ class DisstatClient:
                     "Authorization": self.api_key,
                 }
             )
-        data = {"customData": custom_data}
         response = await self.session.post(
             f"{BASE_URL}/bot/{self.client.user.id}/custom",
-            json=data,
+            json=custom_data,
         )
-        data = await response.json()
-        return data
+        return await response.json()
 
     async def post_command(
         self, command_name: str, invoker_id: int, guild_id: Optional[int] = None
